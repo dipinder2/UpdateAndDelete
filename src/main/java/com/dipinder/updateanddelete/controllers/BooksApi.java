@@ -2,62 +2,53 @@ package com.dipinder.updateanddelete.controllers;
 
 import java.util.List;
 
+import javax.validation.Valid;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
 
 import com.dipinder.updateanddelete.models.Book;
 import com.dipinder.updateanddelete.services.BookService;
 
-@RestController
+@Controller
 public class BooksApi {
     private final BookService bookService;
     public BooksApi(BookService bookService){
         this.bookService = bookService;
     }
-    @RequestMapping("/api/books")
-    public List<Book> index() {
-        return bookService.allBooks();
+    @RequestMapping("/books")
+    public String index(Model model) {
+        List<Book> books = bookService.allBooks();
+        model.addAttribute("books", books);
+
+    	return "/books/index.jsp";
     }
-    
-    @RequestMapping(value="/api/books", method=RequestMethod.POST)
-    public Book create(@RequestParam(value="title") String title, 
-    		@RequestParam(value="description") String desc, 
-    		@RequestParam(value="language") String lang,
-    		@RequestParam(value="pages") Integer numOfPages) {
-        Book book = new Book(title, desc, lang, numOfPages);
-        return bookService.createBook(book);
+    @RequestMapping("/books/new")
+    public String newBook(@ModelAttribute("book") Book book) {
+        return "/books/new.jsp";
     }
-    
-    @RequestMapping("/api/books/{id}")
-    public Book show(@PathVariable("id") Long id) {
-        Book book = bookService.findBook(id);
-        return book;
+    @RequestMapping(value="/books", method=RequestMethod.POST)
+    public String create(@Valid @ModelAttribute("book") Book book, BindingResult result) {
+        if (result.hasErrors()) {
+            return "/books/new.jsp";
+        } else {
+            bookService.createBook(book);
+            return "redirect:/books";
+        }
     }
-    @RequestMapping(value = "/api/books/{id}", method = RequestMethod.PUT)
-    public Book update(@PathVariable("id") Long id,
-    		@RequestParam(value="title") String title, 
-    		@RequestParam(value="description") String desc, 
-    		@RequestParam(value="language") String lang, 
-    		@RequestParam(value="pages") Integer numOfPages
-    		) {
-    	Book book = bookService.findBook(id);
-    	System.out.println(book.getTitle());
-    	book.setTitle(title);
-    	book.setDescription(desc);
-    	book.setLanguage(lang);
-    	book.setNumberOfPages(numOfPages);
+    @RequestMapping("/books/{id}")
+    public String  show(Model model,
+    		@PathVariable("id") Long id) {
     	
-    	return bookService.updateBook(book);
+    	Book book = (bookService.findBook(id));
+    	model.addAttribute("book",book);
+    	return "books/show.jsp";
     }
-    
-    
-    @RequestMapping(value = "/api/books/{id}", method = RequestMethod.DELETE)
-    public void name(@PathVariable("id") Long id) {
-		bookService.deleteBook(id);
-	}
     
     
 }
